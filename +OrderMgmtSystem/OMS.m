@@ -28,6 +28,7 @@ classdef (Abstract) OMS < handle
         senderLocationId;
         Instrument;
         Parties;
+        timeInForce;
     end
     
     methods
@@ -35,6 +36,7 @@ classdef (Abstract) OMS < handle
             O.secretKey = params.secretKey;
             O.qty = params.qty;
             O.ordType = params.ordType;
+            O.timeInForce = params.timeInForce;
             
             O.side = params.side;
             O.price = params.price;
@@ -56,7 +58,7 @@ classdef (Abstract) OMS < handle
         
         
         function sendOrder(O)
-            O.thisOrder = webwrite(O.send_order_url, O.Order, O.send_options);
+            O.thisOrder = webwrite(O.send_order_url, O.Order); %,O.send_options
 
         end
         

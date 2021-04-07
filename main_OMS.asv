@@ -56,10 +56,9 @@ end
 clear order status;
 import OrderMgmtSystem.*;
 
-params.ordType = 'LIMIT';
-params.side = 'BUY';
-params.price = 3650;
-params.qty = 1;
+params.side = 'SELL';
+params.price = '3640';
+params.qty = 1010;
 
 order = OrderFuture(params);
 order.createOrder();
@@ -75,7 +74,7 @@ while orderLoop
     if isstruct(status)
         % when it is a struct it should be a cancelled order
         % however further check this below
-        if strcmp(status(end).status,'8')
+        if strcmp(status(end).status,'4')
             % It's OK
             filledQty = 0;
             break;
@@ -86,17 +85,12 @@ while orderLoop
     elseif iscell(status)
         for k=1:S
             
-            % the only possible final states are '2' and '4' 
-            % state '8' is final as well, bbut means that the order hasn't
-            % been accepted by the market
-            
+            % the only possible final states are '2' and 
             switch status{k}.status
                 
                 case '1' % partially filled
                     % insert here possible additional logic to manage partially
                     % filled orders
-                    
-                    % ==>> ASK GIULIO IF IT IS POSSIBLE TO CANCEL AN ORDER
                     
                     continue
                 case '2' % filled
