@@ -58,8 +58,8 @@ import OrderMgmtSystem.*;
 
 params.ordType = 'LIMIT';
 params.side = 'BUY';
-params.price = 3650;
-params.qty = 1;
+params.price = 3644;
+params.qty = 20;
 
 order = OrderFuture(params);
 order.createOrder();
@@ -68,6 +68,9 @@ pause(2)
 status = order.checkOrderStatus();
 
 orderLoop = true;
+filledQtyLoop = true;
+
+while filledQtyLoop
 
 while orderLoop
     S = numel(status);
@@ -75,12 +78,12 @@ while orderLoop
     if isstruct(status)
         % when it is a struct it should be a cancelled order
         % however further check this below
-        if strcmp(status(end).status,'8')
+        if strcmp(status(end).status,'4') | strcmp(status(end).status,'8') 
             % It's OK
             filledQty = 0;
             break;
         else
-            error('Cell status response not cancelled as expected: check !!!!')
+            error('Cell status response not CANCELLED or REJECTED as expected: check !!!!')
         end
         
     elseif iscell(status)
@@ -112,3 +115,28 @@ while orderLoop
     
 end
 disp(['Done: quantity filled = ',num2str(filledQty)]);
+
+if filledQty==params.qty 
+    filledQtyLoop = false; % exit the loop if params.qty has been filled 
+else
+    % can place here further logic to change the price if needed or to
+    % limit the no of new orders to be generated for a complete fill
+    % params.price =
+end
+end
+
+
+%% GUI tests
+
+% GUI
+params.signalType = params.side;
+params.signalPrice = params.price;
+params.signalQty = params.qty;
+% orderGUI(outfigure,signalType,signalPrice,signalQty)
+
+orderPanel = orderGUI(params);
+orderPanel.orderWindow()
+
+
+
+
