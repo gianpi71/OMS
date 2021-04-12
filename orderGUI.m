@@ -8,6 +8,7 @@ classdef orderGUI < handle
         signalPrice;
         priceFromGui;
         sendFromGui;
+        tsName;
     end
     
     properties (SetAccess = protected)
@@ -19,16 +20,20 @@ classdef orderGUI < handle
             G.signalType = params.signalType;
             G.signalQty = params.signalQty;
             G.signalPrice = params.signalPrice;
+            G.tsName = params.tsName;
             G.sendFromGui = false;
+            
         end % constructor
         
         function orderWindow(G)
             
             G.f = figure ('Visible','off','Tag','OrderWindow','CloseRequestFcn',@(h,e)G.figureClose);
             G.f.Position = [10 320 650 350];
-            G.f.Name = strcat("  ASW MONITOR  ", 'cc');
+            G.f.Name = G.tsName;
             movegui(G.f,'north')
             G.f.Visible = 'on';
+            
+            set(G.f,'UserData','stay'); % the GUI will wait the this proèperty is set to goAhead before closing and allow the caller to resume execution
             
             % Text
             % display signal type (BUY or SELL)
@@ -36,20 +41,31 @@ classdef orderGUI < handle
             BottomDisplacement = 310;
             Width = 200;
             Height = 30;
+            
+            if strcmp(G.signalType,'BUY')
+                backGroundColor = [1 1 0];
+                foregroundColor  = [0 1 0];
+            elseif strcmp(G.signalType,'SELL')
+                backGroundColor = [1 1 0];
+                foregroundColor = [1 0 0];
+            end
+            
+            
             uicontrol(G.f, ...
                 'Style', 'text', 'enable', 'inactive', 'HorizontalAlignment', 'center', ...
                 'String', G.signalType,...
-                'Position' , [LeftDisplacement, BottomDisplacement, Width, Height], 'FontSize', 20, 'BackgroundColor', [.8, .8, .8])
+                'Position' , [LeftDisplacement, BottomDisplacement, Width, Height], 'FontSize', 20, 'BackgroundColor', backGroundColor, ...
+                'ForegroundColor', foregroundColor, 'FontWeight', 'bold');
             
             % display signal quantity
             LeftDisplacement = 70;
             BottomDisplacement = 200;
-            Width = 150;
+            Width = 200;
             Height = 30;
             uicontrol(G.f, ...
                 'Style', 'text', 'enable', 'inactive', 'HorizontalAlignment', 'left', ...
                 'String', ['Quantity: ',num2str(G.signalQty)],...
-                'Position' , [LeftDisplacement, BottomDisplacement, Width, Height], 'FontSize', 18, 'BackgroundColor', [.8, .8, .8])
+                'Position' , [LeftDisplacement, BottomDisplacement, Width, Height], 'FontSize', 18, 'BackgroundColor', [.8, .8, .8]);
             
                      
             % Test: 'Price'
@@ -106,6 +122,9 @@ classdef orderGUI < handle
                 'FontSize', 12, ...
                 'Callback', @(h,e)G.doNotSendOrder);
             
+            waitfor(G.f,'UserData','goAhead');
+            orderWindow_h = findobj('Type','Figure','Tag','OrderWindow')
+            delete(orderWindow_h);
         end % orderWindow
         
         function sendOrder(G)
@@ -122,23 +141,33 @@ classdef orderGUI < handle
             end
             G.priceFromGui = p; 
             G.sendFromGui = true;
-            orderWindow_h = findobj('Type','Figure','Tag','OrderWindow')
-            delete(orderWindow_h)
-        end
+            set(G.f,'UserData','goAhead'); % signal that the GUI can be closed and the caller code execution resume
+
+        end % sendOrder
         
         function doNotSendOrder(G)
-            % simply delete the figure and get back to the caller
-            G.sendFromGui = false;
-            orderWindow_h = findobj('Type','Figure','Tag','OrderWindow')
-            delete(orderWindow_h);
+            % make  second check
+            selection = questdlg('The order wont be sent to the market. Are you sure ?',...
+                'Cancel Confirmation',...
+                'Yes','No','Yes');
             
-            % TODO: can place a warning here
-        end
+            switch selection
+                case 'Yes'
+                    % simply delete the figure and get back to the caller
+                    G.sendFromGui = false;
+                    G.priceFromGui = [];
+                    set(G.f,'UserData','goAhead'); % signal that the GUI can be closed and the caller code execution resume
+
+                case 'No'
+                    return
+            end
+            
+        end % doNotSendOrder
         
         function figureClose(G)
             h=msgbox('This panel cannot be closed: use one of the buttons provided in the window','Error');
             uiwait(h);
-        end
+        end % figureClose
         
     end %public methods
 end %classdef

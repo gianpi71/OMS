@@ -122,10 +122,9 @@ disp(['Done: quantity filled = ',num2str(filledQty)]);
 if filledQty==params.qty 
     filledQtyLoop = false; % exit the loop if params.qty has been filled 
 else
-    % place here the logic to manage partially executed orders
-    params.qty = leavesQty; % reset the qty to unexecuted qty
-    % the price will be the original price or the latest price set in the
-    % GUI by the user
+    % can place here further logic to change the price if needed or to
+    % limit the no of new orders to be generated for a complete fill
+    % params.price =
 end
 end
 
@@ -156,59 +155,16 @@ disp(['Send Signal = ',num2str(sendFromGui),' with Price = ',num2str(priceFromGu
 
 %% FULL TEST: random orders generation, GUI visualizaton, order routing
 
-% outer loop to generate N orders
-N = 10;
-
-for n=1:N
-    
 clear order status;
 import OrderMgmtSystem.*;
 
-% % params.ordType = 'LIMIT';
-% % params.side = 'BUY';
-% % params.price = 3644;
-% % params.qty = 20;
-% % 
-% % initialQty = params.qty; % <<<<=====
-% % totQty = 0; % to keep track of executed quantities
-
-
-if mod(n,2)==0
-    params.side = 'BUY';
-    if n==2
-        params.ordType = 'LIMIT';
-        params.price = 3643;
-        params.qty = 10;
-    elseif n==4
-        params.ordType = 'MARKET';
-        params.price = 3643;
-        params.qty = 10;
-    else
-        params.ordType = 'LIMIT';
-        params.price = 3645;
-        params.qty = 10;
-    end
-else
-    params.side = 'SELL';
-    
-    if n==1
-        params.ordType = 'LIMIT';
-        params.price = 3640.5;
-        params.qty = 1000;
-    elseif n==3
-        params.ordType = 'MARKET';
-        params.price = 3643;
-        params.qty = 10;
-    else
-        params.ordType = 'LIMIT';
-        params.price = 3640;
-        params.qty = 10;
-    end
-end
-
+params.ordType = 'LIMIT';
+params.side = 'BUY';
+params.price = 3644;
+params.qty = 20;
 
 initialQty = params.qty; % <<<<=====
-totQty = 0; % to keep track of executed quantities
+
 
 % order = OrderFuture(params);
 % order.createOrder();
@@ -220,14 +176,14 @@ orderLoop = true;
 filledQtyLoop = true;
 
 while filledQtyLoop % until the whole 'initialQty' has been executed
-    clear order status;
-
+    
     % GUI to confirm the order
     % *********************************************************************
     guiParams.signalType = params.side;
     guiParams.signalPrice = params.price;
     guiParams.signalQty = params.qty;
     guiParams.tsName = 'Orange';
+    % orderGUI(outfigure,signalType,signalPrice,signalQty)
     
     orderPanel = orderGUI(guiParams);
     orderPanel.orderWindow()
@@ -262,20 +218,19 @@ while orderLoop % until a 'final status' is reached
         if strcmp(status(end).status,'4') | strcmp(status(end).status,'8') 
             % It's OK
             filledQty = 0;
-            notFilledQty = params.qty - filledQty;
             break;
         else
             error('Cell status response not CANCELLED or REJECTED as expected: check !!!!')
         end
         
     elseif iscell(status)
-        %  ** for k=1:S
+        for k=1:S
             
             % the only possible final states are '2' and '4' 
             % state '8' is final as well, bbut means that the order hasn't
             % been accepted by the market
-            STATUS = status{end}; % ** status{k}
-            switch STATUS.status
+            
+            switch status{k}.status
                 
                 case '1' % partially filled
                     % insert here possible additional logic to manage partially
@@ -285,16 +240,13 @@ while orderLoop % until a 'final status' is reached
                     
                     continue
                 case '2' % filled
-                    filledQty = STATUS.cumQty;
-                    notFilledQty = params.qty - filledQty;
+                    filledQty = status{k}.cumQty;
                 case '4' % cancelled
-                    filledQty = STATUS.cumQty;
-                    notFilledQty = params.qty - filledQty;
+                    filledQty = status{k}.cumQty;
                 case '8' % rejected
-                    filledQty = STATUS.cumQty;
-                    notFilledQty = params.qty - filledQty;
+                    filledQty = status{k}.cumQty;
             end
-        %  ** end
+        end
         break
     end
     
@@ -303,17 +255,13 @@ disp(['Done: quantity filled = ',num2str(filledQty)]);
 
 if filledQty==params.qty 
     filledQtyLoop = false; % exit the loop if params.qty has been filled 
-    totQty = totQty + filledQty;
 else
-   % place here the logic to manage partially executed orders
-    params.qty = notFilledQty; % reset the qty to unexecuted qty
-    % the price will be the original price or the latest price set in the
-    % GUI by the user
+    % can place here further logic to change the price if needed or to
+    % limit the no of new orders to be generated for a complete fill
+    % params.price =
+    params.price = 3644;
+    params.qty = 20;
 end
 end
 
-totQty == initialQty;
 
-
-pause(5);
-end % n-loop
